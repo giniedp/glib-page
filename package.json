@@ -1,0 +1,30 @@
+{
+  "name": "glib-page",
+  "version": "1.0.0",
+  "description": "Website for the glib framework",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "del": "^2.2.2",
+    "foundation-apps": "^1.2.0",
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-livereload": "^3.8.1",
+    "gulp-plumber": "^1.1.0",
+    "gulp-pug": "^3.3.0",
+    "gulp-sass": "^3.1.0",
+    "gulp-scss": "^1.4.0",
+    "inflection": "^1.12.0",
+    "jquery": "^3.2.1",
+    "jstransformer-markdown-it": "^2.0.0",
+    "prismjs": "^1.6.0",
+    "pug": "^2.0.0-rc.2",
+    "shelljs": "^0.7.7",
+    "through": "^2.3.8",
+    "underscore": "^1.8.3"
+  }
+}
