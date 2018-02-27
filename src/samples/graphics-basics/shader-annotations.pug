@@ -1,5 +1,5 @@
-//- title: Binding annotations
-//- weight: 1
+//- title: Shader Annotations
+//- weight: 7
 extends ./../../_layouts/example
 block script
   a(name="HTML" index=3)
@@ -94,38 +94,64 @@ block script
 
   a(name="JS" index=1)
   script(type='text/javascript').
+    // # Shader Annotations
+    // The GLSL shader attributes may contain annotation comments.
+    // The attributes may be given a different binding name (`@binding`)
+    // and they may be given a default value (`@default`). The annotations are optional and
+    // they are automatically processed when a shader program is created.
+    //
+    // ---
+
+    // Create the graphics device and pass the existing canvas element from the DOM.
     var device = new Glib.Graphics.Device({
       canvas: document.getElementById('canvas')
     });
+
+    // Create a shader program with vertex and fragment shaders.
+    // Here the shader source code is grabbed from the script tags.
     var program = device.createProgram({
       vertexShader: document.getElementById('vertex-shader').textContent,
       fragmentShader: document.getElementById('fragment-shader').textContent
     });
+
+    // Create a texture object.
+    // Simply pass an URL to the image that should be used as a texture.
     var texture = device.createTexture({
       data: '/assets/textures/proto_red.png'
     });
-    var mesh = Glib.Graphics.Builder.begin().append('Cube').endMesh(device);
 
-    var world = Glib.Math.Mat4.identity();
-    var view = Glib.Math.Mat4.identity();
-    var proj = Glib.Math.Mat4.identity();
+    // Create Cube mesh which is going to be rendered
+    var mesh = Glib.Graphics.ModelBuilder.begin().append('Cube').endMesh(device);
+
+    // Allocate state variables
+    var world = Glib.Math.Mat4.createIdentity();
+    var view = Glib.Math.Mat4.createIdentity();
+    var proj = Glib.Math.Mat4.createIdentity();
     var time = 0;
+
+    // Begin render looop
+    // and accumulate the time
     Glib.utils.loop(function(dt) {
       time += dt;
 
+      // prepare render state
       device.resize();
       device.cullState = Glib.Graphics.CullState.CullCounterClockWise;
       device.clear(Glib.Graphics.Color.CornflowerBlue, 1.0);
 
+      // update the scene
       world.initRotationY(time / 1000);
       view.initTranslation(0, 0, -2);
       var aspect = device.context.drawingBufferWidth / device.context.drawingBufferHeight;
       proj.initPerspectiveFieldOfView(Math.PI/2, aspect, 0, 100);
 
+      // Set shader variables. Mention that not the attribute names are used to set the values.
+      // But instead their @binding names.
       program.setUniform('texture', texture);
       program.setUniform('world', world);
       program.setUniform('view', view);
       program.setUniform('projection', proj);
 
+      // Render the mesh
       mesh.draw(program);
     });

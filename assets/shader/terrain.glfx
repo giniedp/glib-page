@@ -2,48 +2,37 @@ program:
   precision highp float;
   precision highp int;
 
-  #include <lib/common.h>
-  #include <lib/lighting.h>
-  #include <lib/terrain/splatting.h>
+  #define TEXTURED
+  #define TANGENT
+  #define TANGENT_TERRAIN
+  #define NUM_LIGHTS 1
+  #define GAMMA_CORRECTION
 
-  varying vec3 Position;
-  varying vec4 EyePosition;
-  varying vec2 TexCoord;
-  varying vec3 EyeVector;
-  varying vec3 Normal;
+  //#define DEBUG_TEXTURE
+  //#define DEBUG_NORMAL
+
+  #include <lib/splatting.h>
+  #include <lib/glib.h>
 
 technique:
   pass:
     vertexShader:
-
-      // @binding position
-      attribute vec3 vertexPosition;
-        
-      // @binding normal
-      attribute vec3 vertexNormal;
-
-      // @binding texture
-      attribute vec2 vertexUV;
-
       void main(void) {
-        vec4 pos = worldMat4 * vec4(vertexPosition, 1.0);
-
-        Position = pos.xyz;
-        TexCoord = vertexUV;
-        Normal = mat3(worldMat4) * vertexNormal;
-
-        gl_Position = projMat4 * viewMat4 * pos;
+        glibVertexShader();
       }
     fragmentShader:
       void main(void) {
-        vec4 splat = texture2D(textureSplat, TexCoord);
-        float slope = BlendSlope(1.0 - Normal.y, TexCoord);
-        vec3 color = splatColor(TexCoord.xyxy * 64.0, splat, slope).rgb;
+        vec4 splat = texture2D(textureSplat, vTexture.xy).rgba;
+        float slope = blendSlope(1.0 - vWorldNormal.y, vTexture.xy * uTiling);
+        vec3 color = splatColor(vTexture.xyxy * uTiling, splat, slope).rgb;
+        vec3 normal = splatNormal(vTexture.xyxy * uTiling, splat, slope).rbg;
+        normal = normalize(mat3(vWorldTangent.xyz, vWorldBitangent.xyz, vWorldNormal.xyz) * normal.xyz);
 
-        float specIntensity = dot(color.rgb, vec3(0.3, 0.59, 0.11));
-        vec3 eye = normalize(Position - cameraPosition);
-        vec3 normal = normalize(Normal);
+        SurfaceParams surface;
+        surface.Diffuse.xyz = color;
+        surface.Normal.xyz = normal;
 
-        vec3 light = evaluateLights(Position.xyz, normal, color, specIntensity * specular,  specularPower);
-        gl_FragColor = vec4(light + ambient * color, 1);
+        getSpecularColor(surface.Specular);
+        surface.Specular.rgb *= color.rgb;;
+        shadePixel(surface);
       }

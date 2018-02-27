@@ -4,15 +4,8 @@ extends ./../../_layouts/example
 block script
   a(name="HTML" index=3)
   viewcode
-  
-  a(name="GLSL" index=2)
-  .grid-content
-    dl.mt.no-mb
-      dt Vertex shader
-      dd.no-mb 
-        | The vertex shader again uses the vertex position without any transformation.
-        | Additionally passes the texture coordinate to the fragment stage.
 
+  a(name="GLSL" index=2)
   script#vertex-shader(type='text/glsl').
     precision highp float;
     attribute vec3 vPosition;
@@ -23,63 +16,78 @@ block script
       gl_Position = vec4(vPosition, 1.0);
     }
 
-  .grid-content
-    dl.mt.no-mb
-      dt Fragment shader
-      dd.no-mb 
-        | Reads the color from texture and renders the pixel with that color.
-
   script#fragment-shader(type='text/glsl').
     precision highp float;
     uniform sampler2D uTexture;
     varying vec2 texCoord;
     void main(void) {
+      // Read the color from texture and render the pixel with that color.
       gl_FragColor = vec4(texture2D(uTexture, texCoord).rgb, 1.0);
     }
-    
+
   a(name="JS" index=1)
   script(type='text/javascript').
+    // # A Textured Rectangle
+    // This example again renders a simple rectangle. But this time
+    // texture coordinates are added to the vertex buffer. Also
+    // a texture has to be loaded and passed to the fragment shader.
+    //
+    // ---
+
+    // Create the graphics device and pass the existing canvas element from the DOM.
     var device = new Glib.Graphics.Device({
       canvas: document.getElementById('canvas')
     });
+
+    // Create a shader program with vertex and fragment shaders.
+    // Here the shader source code is grabbed from the script tags.
     var program = device.createProgram({
       vertexShader: document.getElementById('vertex-shader').textContent,
       fragmentShader: document.getElementById('fragment-shader').textContent
     });
-    
+
+    // Create the vertex buffer
     var vertices = device.createVertexBuffer({
       layout: {
+        // The layout of `vPosition` keeps unchanged
         vPosition: { type: "float", offset: 0, elements: 3  },
+        // The `vTexture` specifies the layout of the texture coordinates
         vTexture: { type: "float", offset: 12, elements: 2  }
       },
       data: [
-      //  X  |  Y  | Z     U  V   
         -0.5, -0.5, 0.0,   0, 1,
          0.5, -0.5, 0.0,   1, 1,
         -0.5,  0.5, 0.0,   0, 0,
          0.5,  0.5, 0.0,   1, 0
       ]
     });
+
+    // Create the index buffer.
     var indices = device.createIndexBuffer({
       type: 'ushort',
       data: [0, 1, 2, 1, 2, 3]
     });
 
-    // Create a texture object
+    // Create a texture object.
+    // Simply pass an URL to the image that should be used as a texture.
     var texture = device.createTexture({
-      // data is simply an URL to the image
       data: '/assets/textures/proto_red.png'
     });
 
+    // Begin render looop
     Glib.utils.loop(function() {
+      // resize (if needed) and clear the screen
       device.resize();
       device.clear(Glib.Graphics.Color.CornflowerBlue);
-      
-      // Set the 'uTexture' uniform
+
+      // Update the texture in the shader
       program.setUniform('uTexture', texture);
 
+      // set the drawing state
       device.program = program;
       device.indexBuffer = indices;
       device.vertexBuffer = vertices;
+
+      // and render.
       device.drawIndexedPrimitives('TriangleList', 0, 6);
     });

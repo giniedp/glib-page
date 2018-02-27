@@ -2,25 +2,19 @@
 //- weight: 6
 extends ./../../_layouts/example
 block script
-  a(name="HTML")
+  a(name="HTML" index=4)
   viewcode
 
-  a(name="VS")
+  a(name="VS" index=2)
   script#vertex-shader(type='text/glsl').
     precision highp float;
 
-    // @binding position
     attribute vec3 vPosition;
-    // @binding normal
     attribute vec3 vNormal;
-    // @binding texture
     attribute vec2 vTexture;
 
-    // @binding world
     uniform mat4 uWorld;
-    // @binding view
     uniform mat4 uView;
-    // @binding projection
     uniform mat4 uProjection;
 
     // data for fragment stage
@@ -36,22 +30,13 @@ block script
       gl_Position = uProjection * uView * pos;
     }
 
-  a(name="FS")
+  a(name="FS" index=3)
   script#fragment-shader(type='text/glsl').
     precision highp float;
-    // @binding texture
     uniform sampler2D uTexture;
-    // @binding lightColor
-    // @default [1, 1, 1]
     uniform vec3 uLightColor;
-    // @binding lightDirection
-    // @default [0, 0, -1]
     uniform vec3 uLightDirection;
-    // @binding eyePosition
-    // @default [0, 0, 1]
     uniform vec3 uEyePosition;
-    // @binding specularPower
-    // @default 16
     uniform float uSpecularPower;
 
     // data from vertex stage
@@ -89,60 +74,95 @@ block script
       gl_FragColor = color;
     }
 
-  a(name="JS")
+  a(name="JS" index=1)
   script(type='text/javascript').
+    // # A Shaded Rectangle
+    // This example adds a more complex shader to the already textured rectangle.
+    // It requires us to keep track of some more variables and pass them to the shader program.
+    //
+    // ---
+
+    // Create the graphics device and pass the existing canvas element from the DOM.
     var device = new Glib.Graphics.Device({
       canvas: document.getElementById('canvas')
     });
+
+    // Create a shader program with vertex and fragment shaders.
+    // Here the shader source code is grabbed from the script tags.
     var program = device.createProgram({
       vertexShader: document.getElementById('vertex-shader').textContent,
       fragmentShader: document.getElementById('fragment-shader').textContent
     });
 
+    // Create the vertex buffer.
     var vertices = device.createVertexBuffer({
-      layout: Glib.Graphics.VertexLayout.create('PositionNormalTexture'),
+      layout: {
+        vPosition: { type: "float", offset: 0, elements: 3  },
+        vNormal: { type: "float", offset: 12, elements: 3  },
+        vTexture: { type: "float", offset: 24, elements: 2  }
+      },
+      // as the layout already indicates, we add a normal data to each vertex
       data: [
-      //    POSITION      NORMAL  TEXTURE
-      //  X     Y    Z    X|Y|Z    U  V
+      ///   POSITION      NORMAL  TEXTURE
+      /// X     Y    Z    X|Y|Z    U  V
         -0.5, -0.5, 0.0,  0,0,1,   0, 1,
          0.5, -0.5, 0.0,  0,0,1,   1, 1,
         -0.5,  0.5, 0.0,  0,0,1,   0, 0,
          0.5,  0.5, 0.0,  0,0,1,   1, 0
       ]
     });
+
+    // Create the index buffer.
     var indices = device.createIndexBuffer({
       type: 'ushort',
       data: [0, 1, 2, 1, 2, 3]
     });
 
-    // Create a texture object
+    // Create a texture object.
+    // Simply pass an URL to the image that should be used as a texture.
     var texture = device.createTexture({
-      // data is simply an URL to the image
       data: '/assets/textures/proto_red.png'
     });
 
-    var world = Glib.Math.Mat4.identity();
-    var view = Glib.Math.Mat4.identity();
-    var proj = Glib.Math.Mat4.identity();
+    // Define some variables that will be passed to the shader.
+    var world = Glib.Math.Mat4.createIdentity();
+    var view = Glib.Math.Mat4.createIdentity();
+    var proj = Glib.Math.Mat4.createIdentity();
+    var camPosition = Glib.Math.Vec3.create(0, 0, 1)
+    var lightDirection = Glib.Math.Vec3.create(0, 0, -1);
+    var lightColor = Glib.Math.Vec3.create(1, 1, 1);
     var time = 0;
+
+    // Begin render looop and accumulate the time
     Glib.utils.loop(function(dt) {
       time += dt;
 
+      // resize (if needed) and clear the screen
       device.resize();
-      device.clear(Glib.Graphics.Color.CornflowerBlue, 1.0);
+      device.clear(Glib.Graphics.Color.CornflowerBlue);
 
+      // rotate the rectangle, place the camera
+      // and update projection with the aspect ration of the canvas
       world.initRotationY(time / 1000);
-      view.initTranslation(0, 0, -1);
+      view.initIdentity().setTranslation(camPosition).invert();
       var aspect = device.context.drawingBufferWidth / device.context.drawingBufferHeight;
       proj.initPerspectiveFieldOfView(Math.PI/2, aspect, 0, 100);
 
-      program.setUniform('texture', texture);
-      program.setUniform('world', world);
-      program.setUniform('view', view);
-      program.setUniform('projection', proj);
+      // pass variables to the shader
+      program.setUniform('uTexture', texture);
+      program.setUniform('uWorld', world);
+      program.setUniform('uView', view);
+      program.setUniform('uProjection', proj);
 
+      program.setUniform('uLightColor', lightColor);
+      program.setUniform('uLightDirection', lightDirection);
+      program.setUniform('uEyePosition', camPosition);
+      program.setUniform('uSpecularPower', 16);
+
+      // set drawing state
       device.program = program;
       device.indexBuffer = indices;
       device.vertexBuffer = vertices;
+      // and render
       device.drawIndexedPrimitives('TriangleList', 0, 6);
     });

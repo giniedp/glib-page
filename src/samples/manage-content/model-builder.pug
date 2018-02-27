@@ -1,0 +1,120 @@
+//- title: Model builder
+//- weight: 1
+extends ./../../_layouts/example
+block script
+  a(name="HTML" index=3)
+  viewcode
+
+  a(name="EFFECT" index=2)
+  script(type='application/x-yaml'  id="demo-effect").
+    program:
+      precision highp float;
+
+      // @binding position
+      attribute vec3 vPosition;
+      // @binding texture
+      attribute vec2 vTexture;
+
+      // @binding world
+      uniform mat4 uWorld;
+      // @binding view
+      uniform mat4 uView;
+      // @binding projection
+      uniform mat4 uProjection;
+
+      // data for fragment stage
+      varying vec2 texCoord;
+
+    technique:
+      pass:
+        vertexShader:
+          void main(void) {
+            texCoord = vTexture;
+            gl_Position = uProjection * uView * uWorld * vec4(vPosition, 1.0);
+          }
+        fragmentShader:
+          void main(void) {
+            gl_FragColor = vec4(texCoord.x, texCoord.y, 0.0, 1.0);
+          }
+
+  a(name="JS" index=1)
+  script(type='text/javascript').
+    // # Model Builder
+    //
+    // ---
+
+    // Create the graphics device and pass the existing canvas element from the DOM.
+    var device = new Glib.Graphics.Device({
+      canvas: document.getElementById('canvas')
+    });
+    // Create the content manager and start loading the effect. Once the effect is loaded
+    // start building the model.
+    var content = new Glib.Content.Manager(device);
+    var model = null;
+    content.load("ShaderEffect", "demo-effect").then(function(effect) {
+      // Create new instance of ModelBuilder
+      var builder = new Glib.Graphics.ModelBuilder()
+      // Add 4 vertices
+      builder.addVertex({
+        position: [-1, 1, 0],
+        texture:  [ 0, 0]
+      })
+      builder.addVertex({
+        position: [1, 1, 0],
+        texture:  [1, 0]
+      })
+      builder.addVertex({
+        position: [-1, -1, 0],
+        texture:  [ 0,  1]
+      })
+      builder.addVertex({
+        position: [1, -1, 0],
+        texture:  [1,  1]
+      })
+      // Add indices
+      builder.addIndex(0)
+      builder.addIndex(1)
+      builder.addIndex(2)
+      builder.addIndex(1)
+      builder.addIndex(3)
+      builder.addIndex(2)
+      // Finish the model and give it the loaded effect as material
+      model = builder.endModel(device, {
+        materials: [effect]
+      })
+    })
+
+    // allocate scene variables
+    var world = Glib.Math.Mat4.createIdentity();
+    var view = Glib.Math.Mat4.createIdentity();
+    var proj = Glib.Math.Mat4.createIdentity();
+
+    //
+    var time = 0;
+    Glib.utils.loop(function(dt) {
+      time += dt;
+
+      device.resize();
+      device.cullState = Glib.Graphics.CullState.CullNone;
+      device.clear(Glib.Graphics.Color.CornflowerBlue, 1.0);
+
+      // do not proceed if model is still not loaded
+      if (!model) {
+        return
+      }
+
+      // update scene variables
+      view.initTranslation(0, 0, -2);
+      var aspect = device.context.drawingBufferWidth / device.context.drawingBufferHeight;
+      proj.initPerspectiveFieldOfView(Math.PI/2, aspect, 0, 100);
+
+      // apply material parameters
+      model.materials.forEach(function(material) {
+        material.parameters.world = world
+        material.parameters.view = view
+        material.parameters.projection = proj
+      })
+
+      // draw the loaded model
+      model.draw();
+    });

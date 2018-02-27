@@ -2,67 +2,61 @@
 //- weight: 3
 extends ./../../_layouts/example
 block script
-  a(name="PREFACE")
-  .padding
-    :markdown-it
-      The example is similar to the Colored triangle example.
-      The difference is that an index buffer is used to define
-      the drawing order of the vertices. The distinct parts of the code are
-      commented. 
-
-  a(name="HTML")
+  a(name="HTML" index=3)
   viewcode
-  
-  a(name="GLSL")
-  .grid-content
-    dl.mt.no-mb
-      dt Vertex shader
-      dd.no-mb 
-        | The vertex shader again uses the vertex position without any transformation.
-        | Additionally passes the vertex color to the fragment stage
 
+  a(name="GLSL" index=2)
   script#vertex-shader(type='text/glsl').
     precision highp float;
+    // vertex position attribute
     attribute vec3 vPosition;
+    // vertex color attribute
     attribute vec3 vColor;
+    // color attribute that will be passed to the fragment shader
     varying vec3 vertexColor;
     void main(void) {
       vertexColor = vColor;
       gl_Position = vec4(vPosition, 1.0);
     }
-
-  .grid-content
-    dl.mt.no-mb
-      dt Fragment shader
-      dd.no-mb 
-        | Takes the vertex color from the fragment stage and renders the pixel with that color.
-
   script#fragment-shader(type='text/glsl').
     precision highp float;
+    // color attribute coming from vertex shader
     varying vec3 vertexColor;
     void main(void) {
+      // output pixel color
       gl_FragColor = vec4(vertexColor.rgb, 1.0);
     }
-    
-  a(name="JS")
+
+  a(name="JS" index=1)
   script(type='text/javascript').
+    // # A Colored Rectangle
+    // The example is similar to the Colored triangle example.
+    // But this time an index buffer is used to define the drawing order of the vertices
+    //
+    // ---
+
+    // Create the graphics device and pass the existing canvas element from the DOM.
     var device = new Glib.Graphics.Device({
       canvas: document.getElementById('canvas')
     });
+
+    // Create a shader program with vertex and fragment shaders.
+    // Here the shader source code is grabbed from the script tags.
     var program = device.createProgram({
       vertexShader: document.getElementById('vertex-shader').textContent,
       fragmentShader: document.getElementById('fragment-shader').textContent
     });
-    
+
+    // Create the vertex buffer. In this example each triangle vertex
+    // is defined by a position and a color attribute.
+    // The layout is the same as in previous example.
+    // The data gets an additional vertex.
     var vertices = device.createVertexBuffer({
-      // the layout is the same as in previous example
       layout: {
         vPosition: { type: "float", offset: 0, elements: 3  },
         vColor: { type: "float", offset: 12, elements: 3 }
       },
-      // A rectangle needs one more vertex compared to a triangle
       data: [
-      //  X  |  Y  | Z     R | G | B
         -0.5, -0.5, 0.0,   1,  0,  0, // The red vertex
          0.5, -0.5, 0.0,   0,  1,  0, // The green vertex
         -0.5,  0.5, 0.0,   0,  0,  1, // The blue vertex
@@ -70,11 +64,11 @@ block script
       ]
     });
 
-
+    // Create the index buffer.
     var indices = device.createIndexBuffer({
       type: 'ushort',
       data: [
-        0, 1, 2, // the first triangle 
+        0, 1, 2, // the first triangle
         1, 2, 3  // the second triangle
       ]
     });
@@ -82,13 +76,12 @@ block script
     Glib.utils.loop(function() {
       device.resize();
       device.clear(Glib.Graphics.Color.CornflowerBlue);
-      
+
       device.program = program;
       device.vertexBuffer = vertices;
 
-      // Also set the index buffer
+      // Now set the index buffer and then call `drawIndexedPrimitives`.
+      // This is similar to 'drawPrimitives' but utilizes the index buffer.
       device.indexBuffer = indices;
-      // Now call drawIndexedPrimitives. This is similar to 'drawPrimitives'
-      // but utilizes the index buffer.
       device.drawIndexedPrimitives('TriangleList', 0, 6);
     });

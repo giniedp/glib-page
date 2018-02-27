@@ -1,10 +1,11 @@
-//- title: Geometry Builder: Shapes
+//- title: Geometry Shapes
 extends ./../../_layouts/example
 block script
+  a(name="JS")
   script(type='text/javascript').
-    function ShapeComponent() {
-      this.setup = function () {
-        this.node.getServices({
+    class ShapeComponent {
+      setup() {
+        this.entity.getServices({
           time: "root:Time",
           device: "root:Device",
           assets: "root:Assets",
@@ -14,67 +15,66 @@ block script
         this.assets
           .load("Material", "/assets/materials/default.json")
           .then(function (material) {
-            var builder = new Glib.Graphics.Builder();
+            var builder = new Glib.Graphics.ModelBuilder();
             builder.transform = Glib.Math.Mat4.createTranslation(0, 0, 0);
-
-            Glib.Graphics.Builder.buildOctahedron(builder, {
+            builder.append('Octahedron', {
               diameter: 1,
               steps: 3
             });
             builder.transform = Glib.Math.Mat4.createTranslation(2, 0, 0);
-            Glib.Graphics.Builder.buildCube(builder, {
+            builder.append("Cube", {
               size: 1
             });
             builder.transform = Glib.Math.Mat4.createTranslation(4, 0, 0);
-            Glib.Graphics.Builder.buildPlane(builder, {
+            builder.append("Plane", {
               size: 1
             });
             builder.transform = Glib.Math.Mat4.createTranslation(0, 2, 0);
-            Glib.Graphics.Builder.buildCylinder(builder, {
+            builder.append("Cylinder", {
               diameter: 1,
               height: 1,
               steps: 16
             });
             builder.transform = Glib.Math.Mat4.createTranslation(2, 2, 0);
-            Glib.Graphics.Builder.buildCone(builder, {
+            builder.append("Cone", {
               topDiameter: 0,
               bottomDiameter: 1,
               height: 1,
               steps: 16
             });
             builder.transform = Glib.Math.Mat4.createTranslation(4, 2, 0);
-            Glib.Graphics.Builder.buildCap(builder, {
+            builder.append("Cap", {
               diameter: 1,
               steps: 16
             });
             builder.transform = Glib.Math.Mat4.createTranslation(0, 4, 0);
-            Glib.Graphics.Builder.buildSuperEllipsoid(builder, {
+            builder.append("SuperEllipsoid", {
               diameter: 1,
               steps: 32,
               n1: 0.25,
               n2: 1.25
             });
             builder.transform = Glib.Math.Mat4.createTranslation(2, 4, 0);
-            Glib.Graphics.Builder.buildSphericalHarmonics(builder, {
+            builder.append("SphericalHarmonics", {
               diameter: 1,
               steps: 64,
               parameters: [1,1,2,1,4,1,8,1]
-              //parameters: []
             });
             builder.transform = Glib.Math.Mat4.createTranslation(4, 4, 0);
-            Glib.Graphics.Builder.buildMobiusStrip(builder, {
+            builder.append("MobiusStrip", {
               diameter: 1,
               steps: 32,
               band: 0.4
             });
-            var model = builder.finishModel(this.device, {materials: [material]});
+            var model = builder.endModel(this.device, {materials: [material]});
             this.renderable.model = model;
           }.bind(this));
-      };
-      this.update = function (time) {
+      }
+
+      update(time) {
         //this.transform.setScaleUniform(10);
         //this.transform.rotateXYZAngle(0, 1, 0, time / 1000 * Math.PI / 4);
-      };
+      }
     }
 
     game = Glib.Ecs
@@ -82,18 +82,18 @@ block script
         canvas: document.getElementById("canvas"),
         autorun: true
       })
-      .buildChild({
+      .buildEntity({
         name: "Camera",
         templates: ["Camera", "WASD"]
       }, function (e) {
         e.getService("Camera").activate();
         e.getService("Transform").translateXYZ(2, 2, 10);
       })
-      .buildChild({
+      .buildEntity({
         name: "Light",
         templates: "DirectionalLight"
       })
-      .buildChild({
+      .buildEntity({
         name: "Shapes",
         templates: ["Model"]
       }, function(e) {

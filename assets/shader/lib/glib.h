@@ -101,8 +101,8 @@ uniform float uAlpha;
 uniform float uAlphaClip;
 
 // @binding SpecularPower
-// @widget   range(0, 1024)
-// @default  16
+// @widget   range(0, 1)
+// @default  0.5
 uniform float uSpecularPower;
 
 // @binding FogColor
@@ -156,9 +156,9 @@ uniform sampler2D uLightMap;
 uniform sampler2D uOcclusionMap;
 
 struct LightParams {
-  vec4 Position;  // xyz, w is unused
-  vec4 Direction; // xyz, w is unused
-  vec4 Color;     // rgb = diffuse, a = specular amount
+  vec4 Position;  // xyz = position       , w is unused
+  vec4 Direction; // xyz = direction      , w is unused
+  vec4 Color;     // rgb = diffuse color  , a = specular amount
   vec4 Misc;      // xyz components are implementation dependent light attributes
                   //   w component is light type
                   //     0 = off
@@ -220,10 +220,19 @@ void getDiffuseColor(out vec4 color) {
 }
 
 #ifdef VERTEX_SHADER
+void writePosition() {
+  vWorldPosition = uWorld * vec4(aPosition, 1.0);
+  gl_Position = uProjection * uView * vWorldPosition;
+}
+
 void writeNormal() {
   mat3 nrm = mat3(uWorld);
   vWorldNormal.xyz = nrm * aNormal;
-  #ifdef TANGENT
+  #if defined(TANGENT) && defined(TANGENT_TERRAIN)
+  vWorldTangent.xyz = cross(nrm[0], vWorldNormal.xyz);
+  vWorldBitangent.xyz = cross(vWorldTangent.xyz, vWorldNormal.xyz);
+  #endif
+  #if defined(TANGENT) && !defined(TANGENT_TERRAIN)
   vWorldTangent.xyz = nrm * aTangent;
   vWorldBitangent.xyz = nrm * aBitangent;
   #endif
@@ -231,7 +240,11 @@ void writeNormal() {
 
 void writeTexture() {
   #ifdef TEXTURED
-  vTexture.xy = vec2(aTexture.x, 1.0-aTexture.y);
+  #ifdef TEXTURE_FLIP_Y
+  vTexture.xy = vec2(aTexture.x, 1.0 - aTexture.y);
+  #else
+  vTexture.xy = aTexture.xy;
+  #endif
   #endif
 }
 
@@ -286,7 +299,7 @@ void getLight(in LightParams light, int type, in vec3 position, inout ShadeParam
     float range = max(0.00001, light.Misc.x);
     vec3 toLight = light.Position.xyz - position;
     result.L = normalize(toLight);
-    result.I = light.Color.rgb * light.Color.a * (1.0 - min(1.0, length(toLight) / range));
+    result.I = light.Color.rgb * light.Color.a * max(1.0 - min(1.0, length(toLight) / range), 1.0);
     return;
   }
   #endif
@@ -344,7 +357,6 @@ highp vec3 shadeLambert(
   float dotNL = max(dot(N, L), 0.0);
   return surface.Diffuse.rgb * dotNL * I;
 }
-
 
 highp vec3 shadeCookTorrance(
   inout ShadeParams shade,
@@ -418,39 +430,35 @@ highp vec3 shadeOptimized(
   return (Fr * surface.Specular.rgb + surface.Diffuse.rgb) * dotNL * I;
 }
 
-
 //
 // Vertex shaders
 //
 #ifdef VERTEX_SHADER
 void glibVertexShader() {
-  vWorldPosition = uWorld * vec4(aPosition, 1.0);
-  gl_Position = uProjection * uView * vWorldPosition;
+  writePosition();
   writeTexture();
   writeNormal();
   writeColor();
 }
+
+#ifndef VERTEX_SHADER_FUNCTION
+#define VERTEX_SHADER_FUNCTION glibVertexShader
+#endif
 #endif
 
 //
 // Fragment shaders
 //
 #ifdef FRAGMENT_SHADER
-void glibFragmentShader() {
+void shadePixel(in SurfaceParams surface) {
   vec4 color = vec4(0);
-  SurfaceParams surface;
-  //callSurface(surface);
-  getDiffuseColor(surface.Diffuse);
-  #ifdef ALPHA_CLIP
-  clipAlpha(surface.Diffuse.a);
-  #endif
-  getSpecularColor(surface.Specular);
-  getNormal(surface.Normal.xyz);
 
+  #ifdef GAMMA_CORRECTION
   surface.Diffuse.rgb = pow(surface.Diffuse.rgb, vec3(uGamma));
   surface.Specular.rgb = pow(surface.Specular.rgb, vec3(uGamma));
   //surface.Diffuse.rgb = surface.Diffuse.rgb * surface.Diffuse.rgb;
   //surface.Specular.rgb = surface.Specular.rgb * surface.Specular.rgb;
+  #endif
 
   for (int i = 0; i < NUM_LIGHTS; i++)
   {
@@ -467,18 +475,42 @@ void glibFragmentShader() {
   }
   vec3 ambient;
   getAmbientColor(surface.Normal.xyz, ambient);
-
   color.rgb += ambient.rgb * surface.Diffuse.rgb;
   // color.rgb += surface.Emission.rgb;
-  // color.rgb = surface.Normal.xyz;
-  // color.rgb = surface.Diffuse.rgb;
   color.a = surface.Diffuse.a;
 
   // tone mapping
   color.rgb = 1.0 - exp(-color.rgb);
+
   // gamma conversion
+  #ifdef GAMMA_CORRECTION
   color.rgb = pow(color.rgb, vec3(1.0/uGamma));
+  #endif
+
+  #ifdef DEBUG_TEXTURE
+  color.rgb = surface.Diffuse.rgb;
+  #endif
+
+  #ifdef DEBUG_NORMAL
+  color.rgb = surface.Normal.xyz;
+  #endif
 
   gl_FragColor = color;
 }
+
+void glibFragmentShader() {
+  SurfaceParams surface;
+  //callSurface(surface);
+  getDiffuseColor(surface.Diffuse);
+  #ifdef ALPHA_CLIP
+  clipAlpha(surface.Diffuse.a);
+  #endif
+  getSpecularColor(surface.Specular);
+  getNormal(surface.Normal.xyz);
+  shadePixel(surface);
+}
+
+#ifndef FRAGMENT_SHADER_FUNCTION
+#define FRAGMENT_SHADER_FUNCTION glibFragmentShader
+#endif
 #endif

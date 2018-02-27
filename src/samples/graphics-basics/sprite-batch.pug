@@ -6,26 +6,39 @@ block script
   viewcode
   a(name="JS" index=1)
   script(type='text/javascript').
+    // # Sprite Batch
+    //
+    // ---
+
+    // Create the graphics device and pass the existing canvas element from the DOM.
     var device = new Glib.Graphics.Device({
       canvas: document.getElementById('canvas')
     });
-    
+
+    // Create a sprite batch and several textures that we want to render
     var spriteBatch = device.createSpriteBatch();
     var texture1 = device.createTexture({ data: "/assets/textures/proto_red.png" });
     var texture2 = device.createTexture({ data: "/assets/textures/proto_green.png" });
     var texture3 = device.createTexture({ data: "/assets/textures/proto_blue.png" });
     var texture4 = device.createTexture({ data: "/assets/videos/big-buck-bunny.mp4" });
+    // start the playback of the video texture
     texture4.video.play();
-    
+
+    // Begin the render loop and accumulate the time
     var time = 0;
     Glib.utils.loop(function(dt){
       time += dt;
       var pulse = (Math.sin(2 * Math.PI * time / 2000) + 1) / 2;
 
+      // Resize backbuffer and clear the screen
       device.resize();
       device.clear(Glib.Graphics.Color.CornflowerBlue, 1.0);
-      device.blendState = Glib.Graphics.BlendState.AlphaBlend;
+      // Set blend state to alpha blend. We want one sprite to fade in and out on screen.
+      device.blendState = Glib.Graphics.BlendState.NonPremultiplied;
 
+      // Begin the sprite batch. This will prepare the sprite batch to receive
+      // sprite instructions. The instructions wont be rendered instantly but only
+      // when we call `end`
       spriteBatch.begin();
 
       var vw = device.viewportState.width
@@ -34,24 +47,28 @@ block script
 
       // red texture
       spriteBatch
-        // begin a new sprite with texture
-        // this returns a sprite builder object with chainable methods
+        // Begin drawing a texture.
+        // This returns a sprite builder object with chainable methods that allows
+        // us to specify more parameters of the sprite.
         .draw(texture1)
-        // set tint color
+        // Set the tint color. This will be multiplied with the texture color.
+        // Since we use white here, it actually has no effect on the output.
         .color(0xFFFFFFFF)
-        // set alpha. should not be called before color is set
-        .alpha(pulse) 
-        // set destination rectangle in screen
+        // Set the alpha. This can only be called after `color` is set. Otherwise it would have no effect.
+        .alpha(pulse)
+        // Set destination rectangle on screen.
         .destination(
-          pad, 
-          pad, 
-          size, 
+          pad,
+          pad,
+          size,
           size)
 
 
       // green texture
       spriteBatch
+        // Begin drawing a texture.
         .draw(texture2)
+        // Set destination rectangle on screen.
         .destination(
           pad + 1 * (size + pad) - pad * pulse,
           pad - pad * pulse,
@@ -60,48 +77,59 @@ block script
 
       // blue texture
       spriteBatch
+        // Begin drawing a texture.
         .draw(texture3)
-        // rotate the sprite
+        // Rotate the sprite
         .rotation(2 * Math.PI * time / 2000)
-        // rotate around origin (normalized cooridnates)
+        // Set the origin of the rotation (in normalized cooridnates).
         .origin(0.5, 0.5)
+        // Set destination rectangle on screen.
         .destination(
           pad + 2 * (size + pad),
           pad,
-          size, 
+          size,
           size)
 
       // video split 1
       spriteBatch
+        // Begin drawing a texture.
         .draw(texture4)
-        // source rectanle
+        // Set the source rectangle. That is the portion of the texture that should be rendered.
         .source(0, 0, texture4.width / 3, texture4.height)
+        // Set destination rectangle on screen.
         .destination(
           pad + 0 * (size + pad) + pad * pulse,
           pad + 1 * (size + pad),
-          size, 
+          size,
           size)
 
       // video split 2
       spriteBatch
+        // Begin drawing a texture.
         .draw(texture4)
+        // Set the source rectangle. That is the portion of the texture that should be rendered.
         .source(texture4.width / 3, 0, texture4.width / 3, texture4.height)
+        // Set destination rectangle on screen.
         .destination(
           pad + 1 * (size + pad),
           pad + 1 * (size + pad),
-          size, 
+          size,
           size)
 
       // video split 3
       spriteBatch
+        // Begin drawing a texture.
         .draw(texture4)
+        // Set the source rectangle. That is the portion of the texture that should be rendered.
         .source(2 * texture4.width / 3, 0, texture4.width / 3, texture4.height)
+        // Set destination rectangle on screen.
         .destination(
           pad + 2 * (size + pad) - pad * pulse,
           pad + 1 * (size + pad),
-          size, 
+          size,
           size)
 
+      // Call `end` to close the sprite batch. This will finally render everything since the last call to `begin`.
       spriteBatch.end();
     });
-    
+

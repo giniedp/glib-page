@@ -12,11 +12,11 @@ block script
     var Vec3 = Glib.Math.Vec3;
     var Vec4 = Glib.Math.Vec4;
 
-    Glib.Content.pipelinePreloader('Effect', function(context) {
+    Glib.Content.pipelinePreloader('ShaderEffect', function(context) {
       // redirect the download path for basicEffect
-      if (context.path === 'basicEffect') {
+      if (context.source === 'basicEffect') {
         context.sourceType = '.glfx'
-        context.path = '/assets/shader/basicTextured.glfx'
+        context.source = '/assets/shader/basicTextured.glfx'
       }
     });
 
@@ -37,8 +37,8 @@ block script
       layout: { x: 0.5, y: 0.5, width: 0.5, height: 0.5 },
       camera: {
         world: Mat4.createLookAt(Vec3.multiplyScalar(Vec3.Right, 50), Vec3.Zero, Vec3.Up),
-        view: Mat4.identity(),
-        projection: Mat4.identity()
+        view: Mat4.createIdentity(),
+        projection: Mat4.createIdentity()
       },
       items: items,
       lights: lights,
@@ -48,8 +48,8 @@ block script
       layout: { x: 0.0, y: 0.5, width: 0.5, height: 0.5 },
       camera: {
         world: Mat4.createLookAt(Vec3.multiplyScalar(Vec3.Left, 50), Vec3.Zero, Vec3.Up),
-        view: Mat4.identity(),
-        projection: Mat4.identity()
+        view: Mat4.createIdentity(),
+        projection: Mat4.createIdentity()
       },
       items: items,
       lights: lights,
@@ -59,8 +59,8 @@ block script
       layout: { x: 0.0, y: 0.0, width: 0.5, height: 0.5 },
       camera: {
         world: Mat4.createLookAt(Vec3.multiplyScalar(Vec3.Backward, 50), Vec3.Zero, Vec3.Up),
-        view: Mat4.identity(),
-        projection: Mat4.identity()
+        view: Mat4.createIdentity(),
+        projection: Mat4.createIdentity()
       },
       items: items,
       lights: lights,
@@ -70,8 +70,8 @@ block script
       layout: { x: 0.5, y: 0.0, width: 0.5, height: 0.5 },
       camera: {
         world: Mat4.createLookAt(Vec3.multiplyScalar(Vec3.Up, 50), Vec3.Zero, Vec3.Forward),
-        view: Mat4.identity(),
-        projection: Mat4.identity()
+        view: Mat4.createIdentity(),
+        projection: Mat4.createIdentity()
       },
       items: items,
       lights: lights,
@@ -93,20 +93,20 @@ block script
     content.load("Model", "/assets/models/Tank6.obj").then(function(model) {
       objects.push(createObject(model));
     });
-    content.load("Effect", "/assets/shader/post/bloom-kawase.glfx").then(function(effect) {
+    content.load("ShaderEffect", "/assets/shader/post/bloom-kawase.glfx").then(function(effect) {
       steps.push(new Glib.Render.Post.BloomKawase(effect));
     });
 
     function createObject(model) {
       var object = {
-        world: Mat4.identity(),
+        world: Mat4.createIdentity(),
         model: model
       };
 
       model.meshes.forEach(function(mesh) {
         items.push({
           world: object.world,
-          mesh: mesh,
+          drawable: mesh,
           effect: (model.materials[mesh.materialId] || model.materials[0]),
           data: null
         });

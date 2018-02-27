@@ -7,47 +7,50 @@ html(lang="en")
     script#dsq-count-scr(src="//ginie.disqus.com/count.js" async)
 body.grid-frame
   .grid-block.vertical
-    .grid-block.shrink
-      include ./_includes/menu-bar
+    include ./_includes/menu-bar
     .grid-block
       .grid-container(style="width: 56rem;")
         h1.text-center(style="margin: 2rem;") Glib Framework
 
         :markdown-it
-          [Glib](https://github.com/giniedp/glib) is a collection of graphics related libraries. 
-          At its core it abstracts WebGL calls and provides a clean graphics api for writing 3D applications.
+          [Glib](https://github.com/giniedp/glib) is a collection of graphics related libraries.
+          At its core it abstracts WebGL calls and provides a cleaner graphics api.
           XNA developers might recognize parts of Glibs structure and methods. That is because Glib actually
           mimics a portion of XNAs public api.
 
-          Besides of the abstraction of WebGL Glib delivers following modules and concepts.
+          Besides of the abstraction of WebGL Glib contains following modules and concepts.
 
         dl
           dt Math library
-          dd. 
-            A 3D library without Vectors, Quaternions and Matrices wouldn't be great right? 
-            Glib provides common structures like Vec2, Vec3, Vec4, Quat, Mat4 and a rich set of operations between them.
-          dt Content loading
           dd.
-            A content manager with an interface to load/convert resources (from remote locations) into instances of specific type. 
-            It allows to register custom importer/converter implementations.
+            A 3D library without Vectors, Quaternions and Matrices wouldn't be great right?
+            Glib provides common structures like Vec2, Vec3, Vec4, Quat, Mat4 and a rich set of operations among them.
+          dt Content loading / processing
+          dd.
+            A content manager with an interface to load and convert resources into instances of specific type.
+            It allows to register custom importer, loader and converter implementations.
+          dt Shader binding
+          dd.
+            Parses a shader file and exposes shader variables into the javascript world. Variables are allowed to have
+            magic comments to add metadata which may be used to rename the variable,
+            give it a default value or bind it so it is updated automatically.
           dt Render management
           dd.
-            Enables multi viewport rendering and automatic render target management (useful for custom post processing effects).
-            Allows to setup a rendering path from your custom rendering steps. 
-          dt 
+            multi viewport, automatic render target management, custom rendering path composed of your custom rendering steps.
+          dt
             a(href="https://en.wikipedia.org/wiki/Entity_component_system" target="_blank") Entity component system
           dd
             :markdown-it
               If you are still reading, you are probably familiar with the concept of [entity component sytem](https://en.wikipedia.org/wiki/Entity_component_system).
-              Glib has a concept of components and services. That is better to be explained in one of the (coming) tutorials. 
+              Glib has a concept of components and services. That is better to be explained in one of the (coming) tutorials.
               The library comes bundeled with components such as Light, Camera, Transform, Renderable ... and services such as Time, GameLoop, Fps, Keyboard, Mouse, Touch.
 
         p.text-center
-          span.label.alert DISCLAIMER 
+          span.label.alert DISCLAIMER
           span  The framework is under construction and so is this description.
         #disqus_thread.padding
   script(type='text/javascript').
-      (function() { 
+      (function() {
           var d = document, s = d.createElement('script');
           s.src = '//glib.disqus.com/embed.js';
           s.setAttribute('data-timestamp', +new Date());

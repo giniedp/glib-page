@@ -1,0 +1,71 @@
+//- title: Assets: OBJ file
+//- ignore: true
+extends ./../../_layouts/example
+block script
+  a(name="JS")
+  script(type='text/javascript').
+    Glib.Content.pipelinePreloader('ShaderEffect', function(context) {
+      // redirect the download path for basicEffect
+      if (context.source === 'basicEffect') {
+        context.sourceType = '.glfx'
+        context.source = '/assets/shader/basicTextured.glfx'
+      }
+    });
+
+    class DemoComponent {
+      constructor(options) {
+        this.index = options.index || 0;
+        this.enable = true;
+        this.visible = true;
+      }
+
+      setup() {
+        this.time = this.entity.getService("root:Time");
+        this.assets = this.entity.getService("root:Assets");
+        this.transform = this.entity.getService("Transform");
+        this.renderable = this.entity.getService("Renderable");
+
+        this.assets
+          .load("Model", "/assets/models/roundcube.obj")
+          .then((model) => {
+            this.renderable.model = model;
+          });
+      }
+
+      update() {
+        var s = this.index / totalItems;
+        var t = (s + this.time.totalMsInGame / 3000) * Math.PI * 2;
+        var x = Math.sin(s * Math.PI * 2) * 5;
+        var y = Math.cos(s * Math.PI * 2) * 5;
+
+        this.transform.setPositionXYZ(x, y, Math.sin(t) * 2 - 10);
+        this.transform.setScaleUniform(0.75 + Math.sin(t) * 0.25);
+        this.transform.setRotationXYZAngle(0, 1, 0, t);
+      }
+    }
+
+    game = Glib.Ecs
+      .createGame({
+        canvas: document.getElementById("canvas"),
+        autorun: true
+      })
+      .buildEntity({
+        name: "Camera",
+        templates: ["Camera", "WASD"]
+      }, function (entity) {
+        entity.s.Camera.activate();
+        entity.s.Transform.translateXYZ(0, 0, 5);
+      })
+      .buildEntity({
+        name: "Light",
+        templates: ["DirectionalLight"]
+      });
+    var totalItems = 12;
+    for (var i = 1; i <= totalItems; i++) {
+      game.buildEntity({
+        name: "Model" + i,
+        templates: ["Model"]
+      }, function (entity) {
+        entity.addComponent(new DemoComponent({index: i}));
+      });
+    }

@@ -8,11 +8,11 @@ block script
   a(name="JS" index=1)
   script(type='text/javascript').
 
-    Glib.Content.pipelinePreloader('Effect', function(context) {
+    Glib.Content.pipelinePreloader('ShaderEffect', function(context) {
       // redirect the download path for basicEffect
-      if (context.path === 'basicEffect') {
+      if (context.source === 'basicEffect') {
         context.sourceType = '.glfx'
-        context.path = '/assets/shader/basicTextured.glfx'
+        context.source = '/assets/shader/basicTextured.glfx'
       }
     });
 
@@ -28,9 +28,9 @@ block script
       misc: new Glib.Math.Vec4(1000, 0, 0, 1)
     }
     var camera = {
-      world: Glib.Math.Mat4.identity(),
-      view: Glib.Math.Mat4.identity(),
-      projection: Glib.Math.Mat4.identity()
+      world: Glib.Math.Mat4.createIdentity(),
+      view: Glib.Math.Mat4.createIdentity(),
+      projection: Glib.Math.Mat4.createIdentity()
     }
     var view = {
       camera: camera,
@@ -60,7 +60,7 @@ block script
         objects.push(createObject(model));
       }
     });
-    content.load("Effect", "/assets/shader/post/bloom-kawase.glfx").then(function(effect) {
+    content.load("ShaderEffect", "/assets/shader/post/bloom-kawase.glfx").then(function(effect) {
       var bloomStep = new Glib.Render.Post.BloomKawase(effect);
       ui(function(gui) {
         gui.add(bloomStep, "glowCut", 0, 1);
@@ -70,8 +70,8 @@ block script
     });
 
     function createObject(model) {
-      var position = Glib.Math.Vec3.randomNormal().multiplyScalar(boxSize);
-      var direction = Glib.Math.Vec3.randomNormal();
+      var position = Glib.Math.Vec3.createRandom().normalize().multiplyScalar(boxSize);
+      var direction = Glib.Math.Vec3.createRandom().normalize();
       var up = new Glib.Math.Vec3(0, 1, 0);
 
       var object = {
@@ -86,7 +86,7 @@ block script
       model.meshes.forEach(function(mesh) {
         object.renderItems.push({
           world: object.world,
-          mesh: mesh,
+          drawable: mesh,
           effect: (model.materials[mesh.materialId] || model.materials[0]),
           data: null
         });

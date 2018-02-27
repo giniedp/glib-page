@@ -4,6 +4,7 @@ html(lang="en")
   head
     link(rel="stylesheet" href="/page.css")
     script(type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.js')
+    script(type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/showdown/1.7.1/showdown.min.js')
     script(type='text/javascript' src='/page.js')
     script(type='text/javascript').
       var uiInstance = null;
@@ -16,11 +17,11 @@ html(lang="en")
       };
 
 body.sample-container.dark-theme
+  #dat-gui
   .sample-view
     block view
       .canvas-container
         canvas#canvas(oncontextmenu="return false;")
-      #dat-gui
       script(type='text/javascript' src='/glib.js')
   .sample-code
   .sample-source

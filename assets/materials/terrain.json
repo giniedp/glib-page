@@ -1,15 +1,27 @@
 {
-  "effect": "../shader/terrain.glfx",
+  "effect": "/assets/shader/terrain.glfx",
   "parameters": {
     "ambient": [0.1, 0.1, 0.1],
-    "textureSplat":        "../textures/splat.png",
-    "textureDiffuse":      "../textures/proto_gray.png",
-    "textureDiffuseR":     "../textures/proto_red.png",
-    "textureDiffuseG":     "../textures/proto_green.png",
-    "textureDiffuseB":     "../textures/proto_blue.png",
-    "textureDiffuseSlope": "../textures/proto_orange.png",
+    "textureSplat":        "/assets/heightmaps/test2-splat.png",
+    "textureDiffuse":      "/assets/textures/ground_grass_d.jpg",
+    "textureNormal":       "/assets/textures/ground_grass_n.jpg",
+
+    "textureDiffuseR":     "/assets/textures/ground_sand_d.jpg",
+    "textureNormalR":      "/assets/textures/ground_sand_n.jpg",
+
+    "textureDiffuseG":     "/assets/textures/ground_rocky_d.jpg",
+    "textureNormalG":      "/assets/textures/ground_rocky_n.jpg",
+
+    "textureDiffuseB":     "/assets/textures/ground_snow_d.jpg",
+    "textureNormalB":      "/assets/textures/ground_snow_n.jpg",
+
+    "textureDiffuseA":     "/assets/textures/ground_mud_d.jpg",
+    "textureNormalA":      "/assets/textures/ground_mud_n.jpg",
+
+    "textureDiffuseSlope": "/assets/textures/ground_mntn_d.jpg",
+    "textureNormalSlope":  "/assets/textures/ground_mntn_n.jpg",
     "diffuse": [1, 1, 1],
     "specular": [0.3, 0.3, 0.3],
-    "specularPower": 16
+    "specularPower": 0.001
   }
 }

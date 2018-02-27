@@ -1,0 +1,83 @@
+//- title: Particles
+//- weight: 10
+extends ./../../_layouts/example
+block script
+  a(name="HTML" index=3)
+  viewcode
+
+  a(name="JS" index=1)
+  script(type='text/javascript').
+    // # Particles
+    //
+    // ---
+
+    // Create the graphics device and pass the existing canvas element from the DOM.
+    var device = new Glib.Graphics.Device({
+      canvas: document.getElementById('canvas')
+    });
+    var settings = {
+      texture: device.createTexture({ data: '/assets/textures/smoke.png' }),
+      duration: 2000,
+      maxParticles: 100,
+      minHorizontalVelocity: 0,
+      maxHorizontalVelocity: 0.1,
+      minVerticalVelocity: 0,
+      maxVerticalVelocity: 0.1,
+      endVelocity: 0,
+      minRotateSpeed: -Math.PI / 1000,
+      maxRotateSpeed: Math.PI / 1000,
+      minStartSize: 40,
+      maxStartSize: 60,
+      minEndSize: 80,
+      maxEndSize: 100,
+      gravity: { x: 0, y: -0.1, z: 0 },
+    }
+
+    var channel = new Glib.Graphics.ParticleChannel(device, settings)
+    ui((gui) => {
+      var onChange = () => {
+        channel.setup(settings);
+      };
+      gui.add(settings, "minHorizontalVelocity", 0, 1).step(0.01).onChange(onChange);
+      gui.add(settings, "maxHorizontalVelocity", 0, 1).step(0.01).onChange(onChange);
+      gui.add(settings, "minVerticalVelocity", 0, 1).step(0.01).onChange(onChange);
+      gui.add(settings, "maxVerticalVelocity", 0, 1).step(0.01).onChange(onChange);
+      gui.add(settings, "endVelocity", 0, 1).step(0.01).onChange(onChange);
+      gui.add(settings, "minRotateSpeed", 0, -Math.PI / 1000).step(0.01).onChange(onChange);
+      gui.add(settings, "maxRotateSpeed", 0, Math.PI / 1000).step(0.01).onChange(onChange);
+      gui.add(settings, "minStartSize", 0.25, 100).step(0.25).onChange(onChange);
+      gui.add(settings, "maxStartSize", 0.25, 100).step(0.25).onChange(onChange);
+      gui.add(settings, "minEndSize", 0.25, 100).step(0.25).onChange(onChange);
+      gui.add(settings, "maxEndSize", 0.25, 100).step(0.25).onChange(onChange);
+      gui.add(settings.gravity, "x", -1, 1).step(0.01).onChange(onChange);
+      gui.add(settings.gravity, "y", -1, 1).step(0.01).onChange(onChange);
+      gui.add(settings.gravity, "z", -1, 1).step(0.01).onChange(onChange);
+    });
+
+    var view = Glib.Math.Mat4.createIdentity();
+    var projection = Glib.Math.Mat4.createIdentity();
+    var rate = 1000 / 30
+    var time = 0
+    // Begin the rendering loop
+    Glib.utils.loop(function(dt) {
+      time += dt;
+
+      // Resize and clear the screen
+      device.resize();
+      device.clear(Glib.Graphics.Color.CornflowerBlue, 1, 1);
+      device.cullState = Glib.Graphics.CullState.None;
+
+      var aspect = device.context.drawingBufferWidth / device.context.drawingBufferHeight;
+      view.initTranslation(0, 0, -100);
+      projection.initPerspectiveFieldOfView(Math.PI/3, aspect, 0, 200);
+
+      while (time > rate) {
+        channel.emit({ x: 0, y: 0, z: 0}, { x: 0, y: 0.02, z: 0});
+        time -= rate;
+      }
+
+      channel.program.setUniform("view", view);
+      channel.program.setUniform("projection", projection);
+      channel.update(dt);
+      channel.draw();
+    });

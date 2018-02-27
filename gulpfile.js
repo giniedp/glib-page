@@ -9,7 +9,7 @@ var concat = require('gulp-concat');
 var plumber = require('gulp-plumber');
 var webserver = require('gulp-webserver');
 var livereload = require('gulp-livereload');
-var glibPages = require('./tools/glib-samples.js');
+var listSamples = require('./tools/list-samples.js');
 var shelljs = require('shelljs');
 
 var PATHS = {
@@ -41,7 +41,6 @@ var PATHS = {
       'node_modules/prismjs/components/prism-markup.js',
       'node_modules/prismjs/components/prism-javascript.js',
       'node_modules/prismjs/plugins/autolinker/prism-autolinker.js',
-      'node_modules/prismjs/plugins/line-numbers/prism-line-numbers.js',
       'node_modules/prismjs/plugins/normalize-whitespace/prism-normalize-whitespace.js',
       'src/**/*.js'
     ],
@@ -96,12 +95,12 @@ gulp.task('scss', function(){
 
 gulp.task('jade', function(){
   return src(PATHS.page.pages)
-    .pipe(glibPages.sampler('src/samples'))
+    .pipe(listSamples.sampler('src/samples'))
     .pipe(jade({
       jade: require('pug'),
       pretty: true,
       locals: {
-        samples: glibPages.samples
+        samples: listSamples.samples
       }
     }))
     .pipe(dest())
@@ -122,18 +121,18 @@ gulp.task('scripts', function(){
     .pipe(livereload());
 });
 
-gulp.task('page', ['fonts', 'scripts', 'scss', 'jade']);
+gulp.task('build', ['fonts', 'scripts', 'scss', 'jade']);
 
-gulp.task('watch', ['page'], function() {
-  gulp.watch(PATHS.page.pages, ['page']);
+gulp.task('watch', ['build', 'serve'], function() {
+  gulp.watch(PATHS.page.pages, ['build']);
   gulp.watch(PATHS.page.stylesWatch, ['scss']);
 });
 
-gulp.task('serve', ['watch'], function() {
+gulp.task('serve', ['build'], function() {
   gulp.src(['dist'])
     .pipe(webserver({
       host: '0.0.0.0',
-      port: 3000,
+      port: 3001,
       livereload: true,
       directoryListing: false,
       open: false

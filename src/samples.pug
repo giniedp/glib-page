@@ -9,8 +9,7 @@ html(lang="en")
     script(type='text/javascript' src='/glib.js')
 body.grid-frame.dark-theme.sidebar-off
   .grid-block.vertical
-    .grid-block.shrink
-      include ./_includes/menu-bar
+    include ./_includes/menu-bar
     .grid-block.horizontal
       .sidebar.grid-block.vertical
         each item in samples.folders
@@ -23,14 +22,27 @@ body.grid-frame.dark-theme.sidebar-off
                     li: a.sample-link()&attributes({ href: '#' + file.href })= file.title
 
       .grid-block.vertical
-        .grid-block.shrink
-          .toolbar
-            a.js-toggle-menu.material-icons menu
-            a.js-prev-sample.material-icons chevron_left
-            strong.flex.sample-title.text-center
-            a.js-next-sample.material-icons chevron_right
+        .toolbar
+          a.js-toggle-menu.material-icons menu
+          a.js-prev-sample.material-icons chevron_left
+          strong.flex.sample-title.text-center
+          a.js-next-sample.material-icons chevron_right
         iframe.sample-iframe.grid-block(src)
   script(type='text/javascript').
+    function setSetting(name, value) {
+      if (localStorage) {
+        localStorage.setItem(name, JSON.stringify(value))
+      }
+    }
+    function getSetting(name) {
+      if (localStorage) {
+        try {
+          return JSON.parse(localStorage.getItem(name))
+        } catch (e) {
+          //
+        }
+      }
+    }
     GlibSamples.bootSampleMenu({
       links: 'a.sample-link',
       title: '.sample-title',
@@ -47,12 +59,10 @@ body.grid-frame.dark-theme.sidebar-off
     $('.js-toggle-menu').click(function(e) {
       e.preventDefault();
       $('body').toggleClass('sidebar-off');
-    }).mouseenter(function() {
+      setSetting('sidebar-off', $('body').is('.sidebar-off'))
+    });
+    if (getSetting('sidebar-off')) {
+      $('body').addClass('sidebar-off');
+    } else {
       $('body').removeClass('sidebar-off');
-    });
-    $('.sidebar').mouseleave(function() {
-      $('body').addClass('sidebar-off');
-    });
-    $('a.sample-link').click(function() {
-      $('body').addClass('sidebar-off');
-    });
+    }

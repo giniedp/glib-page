@@ -1,12 +1,12 @@
-//- title: Loading Assets
+//- title: Content loading
 //- weight: 1
 extends ./../../_layouts/example
 block script
   a(name="HTML" index=3)
   viewcode
-  
+
   a(name="MODEL" index=2)
-  script(type="text/glib-asset" id="demo-model.json").
+  script(type="application/json" id="demo-model.json").
     {
       "materials": [
         "demo-material.json"
@@ -38,16 +38,16 @@ block script
       }]
     }
   a(name="MATERIAL" index=2)
-  script(type="text/glib-asset" id="demo-material.json").
+  script(type="application/json" id="demo-material.json").
     {
       "effect": "demo-effect.glfx",
       "parameters": {
-        "texture": "/assets/textures/proto_blue.png",
+        "texture": "/assets/models/ghoul.tga",
         "specularPower": 16
       }
     }
   a(name="EFFECT" index=2)
-  script(type='text/glfx'  id="demo-effect.glfx").
+  script(type='application/x-yaml'  id="demo-effect.glfx").
     program:
       precision highp float;
 
@@ -68,7 +68,7 @@ block script
       // @binding texture
       uniform sampler2D uTexture;
       // @binding ambientColor
-      // @default [0.2, 0.2, 0.2]
+      // @default [0.0, 0.0, 0.0]
       uniform vec3 uAmbientColor;
       // @binding lightColor
       // @default [1, 1, 1]
@@ -109,7 +109,7 @@ block script
         }
         return result;
       }
-      
+
     technique:
       pass:
         vertexShader:
@@ -125,26 +125,52 @@ block script
             vec4 term = CalculateLightTerm(uEyePosition - position, normal, -uLightDirection, uLightColor, uSpecularPower);
             vec4 color = texture2D(uTexture, texCoord);
             color.rgb = uLightColor * term.rgb * color.rgb + term.a * color.rgb + uAmbientColor;
-            color.a = 1.0;  
+            color.a = 1.0;
             gl_FragColor = color;
           }
 
   a(name="JS" index=1)
   script(type='text/javascript').
+    // # Content loading
+    //
+    // This example demonstrates how assets can be loaded by using the `Content.Manager`.
+    // For the demonstration three assets are embedded in the DOM as `script` tags.
+    // The contents of the script tags are the actual asses in text form. The assets are:
+    //
+    // 1. **Model**:
+    // The model references one materials file, the `demo-material.json` and also defines an
+    // array of meshes.
+    //
+    // 2. **Material**:
+    // The material references an effect file, the `demo-effect.glfx` and also defines several
+    // effect parameters
+    //
+    // 3. **Effect**:
+    // The effect is a yaml formatted file that contains the vertex and fragmen shaders.
+    //
+    // All three `script` tags have an`id` which the content manager will look for when loading the assets.
+    //
+    // ---
+
+    // Create the graphics device and pass the existing canvas element from the DOM.
     var device = new Glib.Graphics.Device({
       canvas: document.getElementById('canvas')
     });
+    // Create the content manager and start loading the demo model asynchronously.
+    // All referenced assets like the material and effect will also be loaded
+    // and associated with the model.
     var content = new Glib.Content.Manager(device);
     var model = null;
-
     content.load("Model", "demo-model.json").then(function(result) {
       model = result;
-      console.log(model);
     })
-    
-    var world = Glib.Math.Mat4.identity();
-    var view = Glib.Math.Mat4.identity();
-    var proj = Glib.Math.Mat4.identity();
+
+    // allocate scene variables
+    var world = Glib.Math.Mat4.createIdentity();
+    var view = Glib.Math.Mat4.createIdentity();
+    var proj = Glib.Math.Mat4.createIdentity();
+
+    //
     var time = 0;
     Glib.utils.loop(function(dt) {
       time += dt;
@@ -152,19 +178,26 @@ block script
       device.resize();
       device.cullState = Glib.Graphics.CullState.CullNone;
       device.clear(Glib.Graphics.Color.CornflowerBlue, 1.0);
-      
-      world.initRotationY(time / 1000);
+
+      // do not proceed if model is still not loaded
+      if (!model) {
+        return
+      }
+
+      // update scene variables
+      // world.initRotationY(time / 1000);
       view.initTranslation(0, 0, -2);
-      var aspect = device.context.drawingBufferWidth / device.context.drawingBufferHeight;  
+      var aspect = device.context.drawingBufferWidth / device.context.drawingBufferHeight;
       proj.initPerspectiveFieldOfView(Math.PI/2, aspect, 0, 100);
 
-      if (model) {
-        var material = model.materials[0]
-        var params = material.parameters
-        params.world = world
-        params.view = view
-        params.projection = proj
-        params.eyePosition = { x: 0, y: 0, z: 2 }
-        model.draw();
-      }
+      // apply material parameters
+      model.materials.forEach(function(material) {
+        material.parameters.world = world
+        material.parameters.view = view
+        material.parameters.projection = proj
+        material.parameters.eyePosition = { x: 0, y: 0, z: 2 }
+      })
+
+      // draw the loaded model
+      model.draw();
     });

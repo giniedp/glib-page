@@ -10,7 +10,6 @@
 
   function extractMeta(content) {
     var result = {};
-    var i;
     content = content.trim().split('\n');
     var regex = /\/\/-\s*(\w+)\s*:\s*(.+)/;
     for (var i = 0; i < content.length; i++) {
@@ -42,6 +41,12 @@
     var baseName = path.basename(file, extName);
     var dirName = path.dirname(file);
     return path.join(dirName, baseName + '.html');
+  }
+
+  function sortSamples(node) {
+    node.files.sort((a, b) => (Number(a.weight)||1000) - (Number(b.weight)||1000) );
+    node.folders.sort((a, b) => a.title < b.title ? -1 : 1);
+    node.folders.forEach(sortSamples);
   }
 
   function processFiles(files, dir, result) {
@@ -107,6 +112,8 @@
   };
 
   Mod.prototype.sampler = function(samplesDir) {
+    var $this = this;
+
     this.clear();
     if (!samplesDir) {
       throw new util.PluginError('glib-samples', 'Missing samplesDir parameter');
@@ -114,7 +121,6 @@
     samplesDir = path.join(process.cwd(), samplesDir);
     var sampleFiles = [];
     var files = [];
-    var that = this;
 
     function bufferContents(file) {
       files.push(file);
@@ -127,10 +133,9 @@
     }
 
     function endStream() {
-      processFiles(sampleFiles, samplesDir, that.samples);
-      files.forEach(function(file) {
-        this.emit('data', file);
-      }, this);
+      processFiles(sampleFiles, samplesDir, $this.samples);
+      sortSamples($this.samples);
+      files.forEach((file) => this.emit('data', file), this);
       this.emit('end');
     }
 

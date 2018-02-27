@@ -16,5 +16,14 @@
   "esnext": true,
   "sub": true,
   "browser": false,
-  "node": true
+  "node": true,
+  "globals": {
+    "Prism": true,
+    "jQuery": true,
+    "$": true,
+    "window": true,
+    "document": true,
+    "location": true,
+    "showdown": true
+  }
 }

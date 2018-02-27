@@ -1,14 +1,15 @@
 $sidebar-size: 250px;
 $sidebar-speed: .25s;
+
 .sidebar {
   max-width:$sidebar-size;
   width: $sidebar-size;
   z-index:1;
-}
-
-.sidebar {
   position: absolute;
-  height: 100%;
+  top: 3.5rem;
+  left: 0;
+  bottom: 0;
+
   -webkit-transform: translateX(0px);
       -ms-transform: translateX(0px);
           transform: translateX(0px);
@@ -17,26 +18,27 @@ $sidebar-speed: .25s;
       -ms-transition: -ms-transform $sidebar-speed;
           transition: transform $sidebar-speed;
 }
-.sidebar ~ .grid-block {
-  -webkit-transform: translateX($sidebar-size);
-      -ms-transform: translateX($sidebar-size);
-          transform: translateX($sidebar-size);
-
-  -webkit-transition: -webkit-transform $sidebar-speed;
-      -ms-transition: -ms-transform $sidebar-speed;
-          transition: transform $sidebar-speed;
-}
-
-.sidebar-off {
-  .sidebar {
+.sidebar-off .sidebar {
   -webkit-transform: translateX(-$sidebar-size);
       -ms-transform: translateX(-$sidebar-size);
           transform: translateX(-$sidebar-size);
+}
+
+@include breakpoint(large up) {
+  .sidebar {
+    top: 0;
+    left: 0;
+    bottom: 0;
   }
   .sidebar ~ .grid-block {
-  -webkit-transform: translateX(0px);
-      -ms-transform: translateX(0px);
-          transform: translateX(0px);
+    -webkit-transition: margin-left $sidebar-speed;
+        -ms-transition: margin-left $sidebar-speed;
+            transition: margin-left $sidebar-speed;
+    margin-left: $sidebar-size;
+  }
+
+  .sidebar-off .sidebar ~ .grid-block {
+    margin-left: 0;
   }
 }
 

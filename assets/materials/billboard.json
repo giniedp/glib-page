@@ -1,0 +1,6 @@
+{
+  "effect": "/assets/shader/billboard.glfx",
+  "parameters": {
+    "DiffuseMap": "/assets/textures/billboard_tree.png"
+  }
+}

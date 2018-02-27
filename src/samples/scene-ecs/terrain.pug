@@ -1,0 +1,147 @@
+//- title: Terrain
+//- ignore: true
+extends ./../../_layouts/example
+block script
+  a(name="JS")
+  script(type='text/javascript').
+
+    class TerrainComponent {
+
+      setup() {
+        this.name = "TerrainComponent";
+        this.enable = true;
+        this.visible = true;
+        this.heightmap = null;
+
+        this.entity.getServices({
+          time: "root:Time",
+          device: "root:Device",
+          assets: "root:Assets",
+          transform: "Transform",
+          renderable: "Renderable"
+        }, this);
+
+        this.assets.loadAssets({
+          Material: { default: "/assets/materials/terrain.json" },
+          Image: { heightmap: "/assets/heightmaps/test2.png" }
+        }).then((res) => {
+          var material = res.Material.default;
+          var image = res.Image.heightmap;
+          var heightmap = Glib.Terrain.HeightMap.fromImage(image).smooth().calculateNormals()
+
+          this.bttRoot = new Glib.Terrain.BTTRoot(this.device, {
+            heightMap: heightmap,
+            materials: [material]
+          });
+          this.renderable.model = this.bttRoot.model;
+
+          material.parameters.Tiling = 32
+          material.parameters.Brightness = 1
+          material.parameters.Saturation = 1
+          material.parameters.Pertubation = 0.25
+          ui(function(gui) {
+            gui.add(material.parameters, "Tiling", 1, 128).step(1);
+            gui.add(material.parameters, "Brightness", 0, 2).step(0.1);
+            gui.add(material.parameters, "Saturation", 0, 2).step(0.1);
+            gui.add(material.parameters, "Pertubation", 0, 1);
+            gui.add(material.parameters, "specularPower", 0, 1);
+          });
+
+          // notify that the terrain is loaded and the heightmap is available
+          this.entity.trigger("terrain-loaded");
+        })
+      }
+
+      update() {
+        var terrain = this.bttRoot;
+        if (terrain) {
+          var position = game.find("/Camera:Transform").position;
+          this.bttRoot.updateLod(position);
+        }
+      }
+    }
+
+    class BillboardComponent {
+      setup() {
+        this.enable = true;
+        this.visible = true;
+        this.entity.getServices({
+          time: "root:Time",
+          device: "root:Device",
+          assets: "root:Assets",
+          transform: "Transform",
+          renderable: "Renderable"
+        }, this);
+
+        // listen to event when terrain is loaded and only then load own content
+        this.entity.find("/Terrain").once("terrain-loaded", () => {
+          this.loadContent()
+        })
+      }
+
+      loadContent() {
+        this.assets.loadAssets({
+          Material: "/assets/materials/billboard.json",
+          Image: "/assets/textures/billboard_tree.png"
+        }).then((res) => {
+          // find the terrain component
+          var terrain = this.entity.find("/*:TerrainComponent")
+          var material = res.Material
+          var image = res.Image
+          var builder = new Glib.Graphics.ModelBuilder();
+
+          const w = terrain.bttRoot.heightMap.width;
+          const h = terrain.bttRoot.heightMap.height;
+          for (var i = 0; i < 1000; i++) {
+            const x = Math.floor(Math.random() * w);
+            const z = Math.floor(Math.random() * h);
+            const y = terrain.bttRoot.heightMap.heightAt(x, z)
+            builder.addVertex({ position: [x, y, z], texture: [0, 0] });
+            builder.addVertex({ position: [x, y, z], texture: [1, 0] });
+            builder.addVertex({ position: [x, y, z], texture: [0, 1] });
+            builder.addVertex({ position: [x, y, z], texture: [1, 1] });
+            builder.addIndex(i * 4 + 0);
+            builder.addIndex(i * 4 + 1);
+            builder.addIndex(i * 4 + 2);
+            builder.addIndex(i * 4 + 1);
+            builder.addIndex(i * 4 + 3);
+            builder.addIndex(i * 4 + 2);
+          }
+
+          this.renderable.model = builder.endModel(this.device, {
+            materials: [material]
+          });
+        });
+      }
+    }
+
+    var game = Glib.Ecs
+      .createGame({
+        canvas: document.getElementById("canvas"),
+        autorun: true
+      })
+      .buildEntity({
+        name: "Camera",
+        templates: ["Camera", "WASD"]
+      }, function (e) {
+        e.s.Camera.activate();
+        e.s.Transform.translateXYZ(256, 256, 256);
+      })
+      .buildEntity({
+        name: "Light",
+        templates: ["Transform", "DirectionalLight"]
+      }, function(e){
+        e.s.Transform.rotateYawPitchRoll(Math.PI / 4 * 3, -Math.PI/4, 0);
+      })
+      .buildEntity({
+        name: "Terrain",
+        templates: ["Model"]
+      }, function (e) {
+        e.addComponent(new TerrainComponent());
+      })
+      .buildEntity({
+        name: "Trees",
+        templates: ["Model"]
+      }, function (e) {
+        e.addComponent(new BillboardComponent());
+      });
